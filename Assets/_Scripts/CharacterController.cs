@@ -1,18 +1,30 @@
 using UnityEngine;
 using UnityEngine.Animations;
+using UnityEngine.InputSystem;
 
 public class CharacterController : MonoBehaviour
 {
     IA_PlayerControls myControls;
     Rigidbody myRigidBody;
+    MeshRenderer[] myMeshRenderer;
     Vector3 moveInput;
+    float originalHeightScale;
 
     [Header("Movement Settings")]
     [SerializeField] float movementSpeed;
-    [SerializeField] float rotateSmoothing;
+    [SerializeField] float rotationSpeed;
+    [SerializeField] float sneakHeightMultiplier;
+    [Header("State Flags")]
+    [SerializeField] bool isSneaking;
+    [Header("State Materials")]
+    [SerializeField] Material baseMat;
+    [SerializeField] Material sneakMat;
 
     private void Awake()
     {
+        originalHeightScale = transform.localScale.y;
+        if (myMeshRenderer == null) 
+            myMeshRenderer = GetComponentsInChildren<MeshRenderer>();
         if (myControls == null)
             myControls = new IA_PlayerControls();
         if (myRigidBody == null)
@@ -21,9 +33,11 @@ public class CharacterController : MonoBehaviour
     private void OnEnable()
     {
         myControls.Enable();
+        myControls.Game.Sneak.performed += OnSneak;
     }
     private void OnDisable()
     {
+        myControls.Game.Sneak.performed -= OnSneak;
         myControls.Disable();
     }
     private void FixedUpdate()
@@ -48,13 +62,29 @@ public class CharacterController : MonoBehaviour
         if (moveInput != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveInput);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotateSmoothing * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
-        //Vector3 playerDirection = Vector3.right * moveInput.x + Vector3.forward * moveInput.y;
-        //if (playerDirection.sqrMagnitude > 0)
-        //{
-        //    Quaternion newRotation = Quaternion.LookRotation(playerDirection, Vector3.up);
-        //    transform.rotation = Quaternion.RotateTowards(transform.rotation, newRotation, rotateSmoothing * Time.deltaTime);
-        //}
+    }
+    private void OnSneak(InputAction.CallbackContext ctx)
+    {
+        if (ctx.performed)
+        {
+            if (isSneaking)
+            {
+                isSneaking = false;
+                transform.localScale = new Vector3(transform.localScale.x, originalHeightScale, transform.localScale.z);
+                transform.position += Vector3.up * sneakHeightMultiplier;
+                foreach (MeshRenderer m in myMeshRenderer)
+                    m.material = baseMat;
+            }
+            else
+            {
+                isSneaking = true;
+                transform.localScale = new Vector3(transform.localScale.x, transform.localScale.y * sneakHeightMultiplier, transform.localScale.z);
+                transform.position -= Vector3.up * sneakHeightMultiplier;
+                foreach (MeshRenderer m in myMeshRenderer)
+                    m.material = sneakMat;
+            }
+        }
     }
 }

@@ -594,7 +594,7 @@ Rigidbody:
   m_GameObject: {fileID: 442533609}
   serializedVersion: 4
   m_Mass: 1
-  m_Drag: 1
+  m_Drag: 2
   m_AngularDrag: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
@@ -717,7 +717,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   movementSpeed: 15
-  rotateSmoothing: 15
+  rotationSpeed: 15
+  sneakHeightMultiplier: 0.5
+  isSneaking: 0
+  baseMat: {fileID: 2100000, guid: 88d86f60ff9dfc0408abafa778decdf9, type: 2}
+  sneakMat: {fileID: 2100000, guid: b0fd37457dab48f468b65986c516faaf, type: 2}
 --- !u!1 &469443161
 GameObject:
   m_ObjectHideFlags: 0
