@@ -717,6 +717,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   movementSpeed: 15
+  sneakingSpeed: 9
   rotationSpeed: 15
   sneakHeightMultiplier: 0.5
   isSneaking: 0

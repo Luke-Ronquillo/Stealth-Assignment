@@ -12,6 +12,7 @@ public class CharacterController : MonoBehaviour
 
     [Header("Movement Settings")]
     [SerializeField] float movementSpeed;
+    [SerializeField] float sneakingSpeed;
     [SerializeField] float rotationSpeed;
     [SerializeField] float sneakHeightMultiplier;
     [Header("State Flags")]
@@ -55,7 +56,10 @@ public class CharacterController : MonoBehaviour
     }
     private void HandleMovement()
     {
-        myRigidBody.AddForce(moveInput * movementSpeed, ForceMode.Acceleration);
+        if (!isSneaking)
+            myRigidBody.AddForce(moveInput * movementSpeed, ForceMode.Acceleration);
+        else
+            myRigidBody.AddForce(moveInput * sneakingSpeed, ForceMode.Acceleration);
     }
     private void HandleRotation()
     {
