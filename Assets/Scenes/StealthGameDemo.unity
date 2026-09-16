@@ -3549,6 +3549,7 @@ GameObject:
   - component: {fileID: 1985137333}
   - component: {fileID: 1985137338}
   - component: {fileID: 1985137339}
+  - component: {fileID: 1985137340}
   m_Layer: 6
   m_Name: Enemy 1
   m_TagString: Untagged
@@ -3704,7 +3705,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1985137332}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f290b08be7bad740962a25eacfe1e11, type: 3}
   m_Name: 
@@ -3717,6 +3718,30 @@ MonoBehaviour:
   isLooping: 1
   timeBeforeMovingToNextTarget: 3
   movementSpeed: 3
+--- !u!114 &1985137340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1985137332}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b98358a5faffae642aba601f8ba02685, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerPosition: {fileID: 442533614}
+  idlePoints:
+  - {fileID: 789012150}
+  - {fileID: 541917081}
+  - {fileID: 1021410491}
+  - {fileID: 713606357}
+  timeBeforeMovingToNextIdlePoint: 3
+  isLooping: 1
+  myState: 1
+  movementSpeed: 3
+  pursueDistance: 5
+  fieldOfView: 0.8
 --- !u!1 &2074900008
 GameObject:
   m_ObjectHideFlags: 0
