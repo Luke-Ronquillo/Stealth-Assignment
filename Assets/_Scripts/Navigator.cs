@@ -1,4 +1,3 @@
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
@@ -27,7 +26,7 @@ public class Navigator : MonoBehaviour
     }
     private void Update()
     {
-        if (timeSinceLastDestination > 0.5f)
+        if (timeSinceLastDestination > 0.1f)
         {
             //agent.SetDestination(target.position);
             timeSinceLastDestination = 0;
