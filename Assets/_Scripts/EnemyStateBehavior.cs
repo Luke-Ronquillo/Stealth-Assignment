@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemyBehavior : MonoBehaviour
+public class EnemyStateBehavior : MonoBehaviour
 {
     enum State { idle, patrol, pursue, dead };
 
@@ -13,9 +13,11 @@ public class EnemyBehavior : MonoBehaviour
     Vector3 currentCorner;
     Rigidbody rigidBody;
     Transform currentIdlePoint;
+    float timeSinceLastDestination;
     int idlePointsIndex;
     bool isGoingForward;
     bool reachedTarget;
+    float dot;
 
     [Header("Enemy Transform References")]
     [SerializeField] Transform playerPosition;
@@ -25,10 +27,14 @@ public class EnemyBehavior : MonoBehaviour
     [SerializeField] float timeBeforeMovingToNextIdlePoint;
     [SerializeField] bool isLooping;
 
+    [Header("Enemy Pursue Settings")]
+    [SerializeField] float pursueDistance;
+    [SerializeField] float loseDistance;
+
     [Header("Enemy Settings")]
     [SerializeField] State myState;
     [SerializeField] float movementSpeed;
-    [SerializeField] float pursueDistance;
+    //[SerializeField] float rotationSpeed;
     [SerializeField] float fieldOfView;
 
     private void Awake()
@@ -46,7 +52,7 @@ public class EnemyBehavior : MonoBehaviour
         myState = State.patrol;
 
         currentIdlePoint = idlePoints[idlePointsIndex];
-        CalculateNextPath();
+        CalculateNextPath(currentIdlePoint.position);
     }
     void FixedUpdate()
     {
@@ -67,11 +73,10 @@ public class EnemyBehavior : MonoBehaviour
                 UpdateDead(); 
                 break;
         }
-        Debug.Log("Index: " + idlePointsIndex);
     }
-    void CalculateNextPath()
+    void CalculateNextPath(Vector3 _position)
     {
-        if (agent.CalculatePath(currentIdlePoint.position, currentPath))
+        if (agent.CalculatePath(_position, currentPath))
         {
             remainingPoints.Clear();
             foreach (Vector3 point in currentPath.corners)
@@ -89,17 +94,36 @@ public class EnemyBehavior : MonoBehaviour
     }
     void CheckForNearbyPlayer()
     {
-        Vector3 forwardDirection = transform.forward;
+        //Vector3 direction = transform.forward;
+        //Vector3 origin = transform.position;
+        //RaycastHit hit;
 
-        Vector3 toTarget = (playerPosition.position - transform.position).normalized;
+        //if (Physics.Raycast(origin, direction, out hit, pursueDistance))
+        //{
+        //    if (hit.collider.gameObject.tag == "Player")
+        //    {
+        //        myState = State.pursue;
+        //    }
+        //}
+
+        Vector3 _direction = transform.forward;
+        Vector3 _origin = GetComponentInChildren<Transform>().position;
+        Vector3 toPlayer = (playerPosition.position - transform.position).normalized;
+
+        RaycastHit hit;
+
         float _distance = (playerPosition.position - transform.position).magnitude;
+        float dotProduct = Vector3.Dot(_direction, toPlayer);
+        dot = dotProduct;
 
-        float dotProduct = Vector3.Dot(forwardDirection, toTarget);
         if (dotProduct > fieldOfView && _distance < pursueDistance)
         {
-            myState = State.pursue;
+            if (Physics.Raycast(_origin, toPlayer, out hit, pursueDistance))
+            { 
+                if (hit.collider.gameObject.tag == "Player")
+                    myState = State.pursue;
+            }
         }
-        Debug.Log("Distance: " + _distance);
     }
     void GetNextIdlePoint()
     {
@@ -118,21 +142,38 @@ public class EnemyBehavior : MonoBehaviour
                 idlePointsIndex = 0;
             currentIdlePoint = idlePoints[idlePointsIndex];
             agent.enabled = true;
-            CalculateNextPath();
+            CalculateNextPath(currentIdlePoint.position);
         }
         else
         {
             idlePointsIndex--;
             currentIdlePoint = idlePoints[idlePointsIndex];
             agent.enabled = true;
-            CalculateNextPath();
+            CalculateNextPath(currentIdlePoint.position);
         }
     }
+    public void Alerted(Vector3 position)
+    {
+        if (myState != State.pursue)
+        {
+            transform.LookAt(position);
+            //StartCoroutine(RotateTowardsPlayer());
+            myState = State.idle;
+        }
+    }
+    //IEnumerator RotateTowardsPlayer()
+    //{
+    //    Quaternion targetRotation = Quaternion.LookRotation(playerPosition.position);
+    //    while (transform.rotation != targetRotation)
+    //    {
+    //        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+    //        yield return null;
+    //    }
+    //}
     IEnumerator IdleBeforeNextIdlePoint()
     {
         yield return new WaitForSeconds(timeBeforeMovingToNextIdlePoint);
         GetNextIdlePoint();
-        Debug.Log("Am I stupid again");
         reachedTarget = false;
         myState = State.patrol;
         yield return null;
@@ -145,13 +186,40 @@ public class EnemyBehavior : MonoBehaviour
     }
     void UpdatePursue()
     {
-        Debug.Log("I am pursuing");
-        //transform.Translate(transform.forward * 10 * Time.deltaTime);
-        //float distance = Vector3.Distance(target.position, transform.position);
-        //if (distance < 2)
-        //{
-        //    myState = State.dead;
-        //}
+        StopAllCoroutines();
+        if (timeSinceLastDestination > 0.1f)
+        {
+            agent.enabled = true;
+            CalculateNextPath(playerPosition.position);
+        }
+        timeSinceLastDestination += Time.deltaTime;
+        float distanceToNext = Vector3.Distance(transform.position, currentCorner);
+        if (distanceToNext < 0.5)
+        {
+            if (remainingPoints.Count > 0)
+            {
+                currentCorner = remainingPoints.Dequeue();
+                currentCorner.y = transform.position.y;
+            }
+        }
+        float distanceToPlayer = Vector3.Distance(transform.position, playerPosition.position);
+        if (distanceToPlayer > loseDistance)
+        {
+            myState = State.idle;
+        }
+        else
+        {
+            Vector3 newForward = (currentCorner - transform.position).normalized;
+            newForward.y = 0;
+            transform.forward = newForward;
+        }
+        rigidBody.linearVelocity = transform.forward * movementSpeed;
+        
+        float distance = Vector3.Distance(playerPosition.position, transform.position);
+        if (distance < 1.5)
+        {
+            myState = State.dead;
+        }
     }
     void UpdatePatrol()
     {
@@ -164,8 +232,8 @@ public class EnemyBehavior : MonoBehaviour
                 currentCorner.y = transform.position.y;
             }
         }
-        float distanceToTarget = Vector3.Distance(transform.position, currentIdlePoint.position);
-        if (distanceToTarget < 0.5)
+        float distanceToIdleNode = Vector3.Distance(transform.position, currentIdlePoint.position);
+        if (distanceToIdleNode < 0.5)
         {
             myState = State.idle;
         }
@@ -182,18 +250,17 @@ public class EnemyBehavior : MonoBehaviour
     {
         Debug.Log("Oh no, I'm dead");
     }
-    
-    //private void OnDrawGizmos()
-    //{
-    //    Gizmos.color = Color.yellow;
-    //    Gizmos.DrawLine(transform.position, target.position);
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(transform.position, playerPosition.position);
 
-    //    Vector3 endPoint = transform.position + transform.forward * 10;
+        Vector3 endPoint = transform.position + transform.forward * 10;
 
-    //    if (dot > 0.8f)
-    //        Gizmos.color = Color.green;
-    //    else
-    //        Gizmos.color = Color.red;
-    //    Gizmos.DrawLine(transform.position, endPoint);
-    //}
+        if (dot > 0.8f)
+            Gizmos.color = Color.green;
+        else
+            Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position, endPoint);
+    }
 }

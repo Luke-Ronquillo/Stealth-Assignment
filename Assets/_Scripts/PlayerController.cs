@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Animations;
+using UnityEngine.Events;
 using UnityEngine.InputSystem;
 
 public class PlayerController : MonoBehaviour
@@ -9,14 +10,17 @@ public class PlayerController : MonoBehaviour
     MeshRenderer[] myMeshRenderer;
     Vector3 moveInput;
     float originalHeightScale;
+    EnemyStateBehavior enemyStateScript;
 
     [Header("Movement Settings")]
     [SerializeField] float movementSpeed;
     [SerializeField] float sneakingSpeed;
     [SerializeField] float rotationSpeed;
     [SerializeField] float sneakHeightMultiplier;
+
     [Header("State Flags")]
     [SerializeField] bool isSneaking;
+
     [Header("State Materials")]
     [SerializeField] Material baseMat;
     [SerializeField] Material sneakMat;
@@ -43,9 +47,12 @@ public class PlayerController : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        Debug.Log(moveInput);
         HandleInput();
         HandleMovement();
         HandleRotation();
+        if (enemyStateScript != null)
+            EnemySneakCheck();
     }
     private void HandleInput()
     {
@@ -67,6 +74,7 @@ public class PlayerController : MonoBehaviour
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveInput);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            Debug.Log(targetRotation + " and " + transform.rotation);
         }
     }
     private void OnSneak(InputAction.CallbackContext ctx)
@@ -90,5 +98,22 @@ public class PlayerController : MonoBehaviour
                     m.material = sneakMat;
             }
         }
+    }
+    private void EnemySneakCheck()
+    {
+        if (!isSneaking && moveInput.magnitude > 0)
+            enemyStateScript.Alerted(transform.position);
+    }    
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("Collided with " + other.name);
+        if (other.gameObject.tag == "Enemy")
+        {
+            enemyStateScript = other.gameObject.GetComponent<EnemyStateBehavior>();
+        }
+    }
+    private void OnTriggerExit(Collider other)
+    {
+        enemyStateScript = null;
     }
 }
